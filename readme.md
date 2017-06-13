@@ -1,3 +1,5 @@
+__Forked for the purpose of creating a different package structure, so it can be used along side a dependency to graphdb-free-runtime, which is closed source and has a copy of outdated sources packaged within, creating a conflict.__
+
 [![Build Status](https://www.travis-ci.org/aled/jsi.png?branch=master)](https://www.travis-ci.org/aled/jsi)
 
 Overview
