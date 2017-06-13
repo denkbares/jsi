@@ -17,25 +17,24 @@
 //  License along with this library; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-package net.sf.jsi.rtree;
+package com.denkbares.jsi.rtree;
+
+import java.io.Serializable;
+import java.util.Properties;
 
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntProcedure;
 import gnu.trove.stack.TIntStack;
 import gnu.trove.stack.array.TIntArrayStack;
-
-import java.io.Serializable;
-import java.util.Properties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.sf.jsi.BuildProperties;
-import net.sf.jsi.Point;
-import net.sf.jsi.Rectangle;
-import net.sf.jsi.PriorityQueue;
-import net.sf.jsi.SpatialIndex;
+import com.denkbares.jsi.BuildProperties;
+import com.denkbares.jsi.Point;
+import com.denkbares.jsi.PriorityQueue;
+import com.denkbares.jsi.Rectangle;
+import com.denkbares.jsi.SpatialIndex;
 
 /**
  * <p>This is a lightweight RTree implementation, specifically designed
@@ -60,41 +59,34 @@ public class RTree implements SpatialIndex, Serializable {
   // parameters of the tree
   private final static int DEFAULT_MAX_NODE_ENTRIES = 50;
   private final static int DEFAULT_MIN_NODE_ENTRIES = 20;
-  int maxNodeEntries;
-  int minNodeEntries;
-
-  // map of nodeId -> node object
-  // TODO eliminate this map - it should not be needed. Nodes
-  // can be found by traversing the tree.
-  private TIntObjectHashMap<Node> nodeMap = new TIntObjectHashMap<Node>();
-
   // internal consistency checking - set to true if debugging tree corruption
   private final static boolean INTERNAL_CONSISTENCY_CHECKING = false;
-
   // used to mark the status of entries during a node split
   private final static int ENTRY_STATUS_ASSIGNED = 0;
   private final static int ENTRY_STATUS_UNASSIGNED = 1;
-  private byte[] entryStatus = null;
-  private byte[] initialEntryStatus = null;
-
+  // map of nodeId -> node object
+  // TODO eliminate this map - it should not be needed. Nodes
+  // can be found by traversing the tree.
+  private final TIntObjectHashMap<Node> nodeMap = new TIntObjectHashMap<Node>();
   // stacks used to store nodeId and entry index of each node
   // from the root down to the leaf. Enables fast lookup
   // of nodes when a split is propagated up the tree.
-  private TIntStack parents = new TIntArrayStack();
-  private TIntStack parentsEntry = new TIntArrayStack();
-
+  private final TIntStack parents = new TIntArrayStack();
+  private final TIntStack parentsEntry = new TIntArrayStack();
+  // Deleted node objects are retained in the nodeMap,
+  // so that they can be reused. Store the IDs of nodes
+  // which can be reused.
+  private final TIntStack deletedNodeIds = new TIntArrayStack();
+  int maxNodeEntries;
+  int minNodeEntries;
+  private byte[] entryStatus = null;
+  private byte[] initialEntryStatus = null;
   // initialisation
   private int treeHeight = 1; // leaves are always level 1
   private int rootNodeId = 0;
   private int size = 0;
-
   // Enables creation of new nodes
   private int highestUsedNodeId = rootNodeId;
-
-  // Deleted node objects are retained in the nodeMap,
-  // so that they can be reused. Store the IDs of nodes
-  // which can be reused.
-  private TIntStack deletedNodeIds = new TIntArrayStack();
 
   /**
    * Constructor. Use init() method to initialize parameters of the RTree.
@@ -125,7 +117,7 @@ public class RTree implements SpatialIndex, Serializable {
    * down), which is used if the property is not specified or is less than 1.
    * </ul></p>
    *
-   * @see net.sf.jsi.SpatialIndex#init(Properties)
+   * @see SpatialIndex#init(Properties)
    */
   public void init(Properties props) {
     if (props == null) {
@@ -165,7 +157,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#add(Rectangle, int)
+   * @see SpatialIndex#add(Rectangle, int)
    */
   public void add(Rectangle r, int id) {
     if (log.isDebugEnabled()) {
@@ -219,7 +211,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#delete(Rectangle, int)
+   * @see SpatialIndex#delete(Rectangle, int)
    */
   public boolean delete(Rectangle r, int id) {
     // FindLeaf algorithm inlined here. Note the "official" algorithm
@@ -306,7 +298,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#nearest(Point, TIntProcedure, float)
+   * @see SpatialIndex#nearest(Point, TIntProcedure, float)
    */
   public void nearest(Point p, TIntProcedure v, float furthestDistance) {
     Node rootNode = getNode(rootNodeId);
@@ -412,7 +404,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#nearestNUnsorted(Point, TIntProcedure, int, float)
+   * @see SpatialIndex#nearestNUnsorted(Point, TIntProcedure, int, float)
    */
   public void nearestNUnsorted(Point p, TIntProcedure v, int count, float furthestDistance) {
     // This implementation is designed to give good performance
@@ -434,7 +426,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#nearestN(Point, TIntProcedure, int, float)
+   * @see SpatialIndex#nearestN(Point, TIntProcedure, int, float)
    */
   public void nearestN(Point p, TIntProcedure v, int count, float furthestDistance) {
     PriorityQueue distanceQueue = new PriorityQueue(PriorityQueue.SORT_ORDER_DESCENDING);
@@ -448,7 +440,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#intersects(Rectangle, TIntProcedure)
+   * @see SpatialIndex#intersects(Rectangle, TIntProcedure)
    */
   public void intersects(Rectangle r, TIntProcedure v) {
     Node rootNode = getNode(rootNodeId);
@@ -456,7 +448,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#contains(Rectangle, TIntProcedure)
+   * @see SpatialIndex#contains(Rectangle, TIntProcedure)
    */
   public void contains(Rectangle r, TIntProcedure v) {
     // find all rectangles in the tree that are contained by the passed rectangle
@@ -511,14 +503,14 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#size()
+   * @see SpatialIndex#size()
    */
   public int size() {
     return size;
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#getBounds()
+   * @see SpatialIndex#getBounds()
    */
   public Rectangle getBounds() {
     Rectangle bounds = null;
@@ -535,7 +527,7 @@ public class RTree implements SpatialIndex, Serializable {
   }
 
   /**
-   * @see net.sf.jsi.SpatialIndex#getVersion()
+   * @see SpatialIndex#getVersion()
    */
   public String getVersion() {
     return "RTree-" + BuildProperties.getVersion();
