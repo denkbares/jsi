@@ -37,7 +37,7 @@ public class SpatialIndexFactory {
 
 	public static SpatialIndex newInstance(String type, Properties props) {
 		SpatialIndex si = null;
-		String className = "net.sf.jsi." + type;
+		String className = "com.denkbares.jsi." + type;
 		try {
 			si = (SpatialIndex) Class.forName(className).newInstance();
 			si.init(props);
